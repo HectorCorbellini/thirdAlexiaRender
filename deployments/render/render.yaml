@@ -1,0 +1,79 @@
+services:
+  - type: web
+    name: alexia-backend
+    runtime: node
+    buildCommand: |
+      cd backend &&
+      npm install &&
+      npm run build &&
+      npm run db:deploy
+    startCommand: cd backend && npm start
+    port: 10000
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: alexia-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: AI_PROVIDER
+        value: groq
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: TELEGRAM_WEBHOOK_URL
+        fromService:
+          type: web
+          name: alexia-backend
+          property: host
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANALYTICS_ENABLED
+        value: true
+
+  - type: pserv
+    name: alexia-db
+    runtime: postgres
+    databaseName: alexia_db
+    user: alexia_user
+    password: alexia_password
+    port: 5432
+    ipAllowList: []  # Only accessible by other services in this project
+
+  - type: web
+    name: alexia-frontend
+    runtime: node
+    buildCommand: npm install && npm run build
+    startCommand: npm run preview
+    port: 4173
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: alexia-backend
+          property: host
+
+# Custom domains (optional)
+# domains:
+#   - alexia.yourdomain.com
+
+# Environment groups for different deployment stages
+# envVarGroups:
+#   - name: production
+#     envVars:
+#       - key: NODE_ENV
+#         value: production
+#   - name: staging
+#     envVars:
+#       - key: NODE_ENV
+#         value: staging

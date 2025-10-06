@@ -1,0 +1,38 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "echo 'Multi-service deployment - managed by Railway'"
+
+[[services]]
+name = "alexia-frontend"
+source = "frontend"
+
+[services.build]
+builder = "nixpacks"
+buildCommand = "npm install && npm run build"
+
+[services.deploy]
+startCommand = "npm run preview"
+healthcheckPath = "/"
+
+[[services]]
+name = "alexia-backend"
+source = "backend"
+
+[services.build]
+builder = "nixpacks"
+buildCommand = "npm install && npm run build && npm run db:deploy"
+
+[services.deploy]
+startCommand = "npm start"
+healthcheckPath = "/api/health"
+
+[[services]]
+name = "alexia-db"
+type = "postgres"
+
+[services.variables]
+DATABASE_NAME = "alexia_db"
+DATABASE_USER = "alexia_user"
+DATABASE_PASSWORD = "alexia_password"

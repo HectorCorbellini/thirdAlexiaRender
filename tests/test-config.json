@@ -1,0 +1,45 @@
+{
+  "name": "alexia-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive test suite for ALEXIA AI platform",
+  "scripts": {
+    "test": "bash run_all_tests.sh",
+    "test:unit": "bash unit/run_unit_tests.sh",
+    "test:integration": "bash integration/run_integration_tests.sh",
+    "test:e2e": "bash e2e/run_e2e_tests.sh",
+    "test:ai": "bash unit/test_ai_components.sh",
+    "test:performance": "bash performance/test_performance.sh"
+  },
+  "testCategories": {
+    "unit": {
+      "description": "Unit tests for individual components",
+      "files": [
+        "unit/test-ai-agent.js",
+        "unit/test-intent-detection.js",
+        "unit/test-prompt-manager.js"
+      ]
+    },
+    "integration": {
+      "description": "Integration tests for component interactions",
+      "files": [
+        "integration/test-whatsapp-integration.js"
+      ]
+    },
+    "e2e": {
+      "description": "End-to-end workflow tests",
+      "files": [
+        "e2e/test_complete_workflow.js"
+      ]
+    }
+  },
+  "testEnvironment": {
+    "nodeVersion": ">=18.0.0",
+    "requiredServices": [
+      "backend-server",
+      "database"
+    ],
+    "optionalServices": [
+      "frontend-server"
+    ]
+  }
+}

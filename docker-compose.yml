@@ -1,0 +1,85 @@
+# =============================================================================
+# Docker Compose Configuration for ALEXIA Platform
+# =============================================================================
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:14-alpine
+    container_name: alexia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-alexia_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alexia_password}
+      POSTGRES_DB: ${POSTGRES_DB:-alexia_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-alexia_user} -d ${POSTGRES_DB:-alexia_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: alexia-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    network_mode: host
+    environment:
+      # Database (connecting to postgres container via localhost since using host network)
+      DATABASE_URL: postgresql://${POSTGRES_USER:-alexia_user}:${POSTGRES_PASSWORD:-alexia_password}@localhost:5432/${POSTGRES_DB:-alexia_db}?schema=public
+      
+      # Server
+      PORT: 3001
+      NODE_ENV: production
+      
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      
+      # Messaging Platform
+      MESSAGING_PLATFORM: ${MESSAGING_PLATFORM:-telegram}
+      
+      # WhatsApp
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID}
+      WHATSAPP_VERIFY_TOKEN: ${WHATSAPP_VERIFY_TOKEN}
+      
+      # Telegram
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_WEBHOOK_URL: ${TELEGRAM_WEBHOOK_URL}
+      TELEGRAM_POLLING: ${TELEGRAM_POLLING:-true}
+      TELEGRAM_POLLING_INTERVAL: ${TELEGRAM_POLLING_INTERVAL:-30000}
+      
+      # AI Provider
+      AI_PROVIDER: ${AI_PROVIDER:-groq}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-3.5-turbo}
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.1-8b-instant}
+      
+      # Map Provider
+      MAP_PROVIDER: ${MAP_PROVIDER:-nominatim}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY}
+
+  # Frontend Dashboard
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: alexia-frontend
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

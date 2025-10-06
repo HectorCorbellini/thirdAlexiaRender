@@ -1,0 +1,238 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String
+  name         String
+  role         Role     @default(MERCHANT)
+  isActive     Boolean  @default(true)
+  businessId   String?
+  business     Business? @relation(fields: [businessId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model WhatsAppUser {
+  id          String    @id @default(cuid())
+  waId        String    @unique
+  name        String?
+  phone       String?
+  lastLocation Json?
+  isActive    Boolean   @default(true)
+  businessId  String?
+  business    Business? @relation(fields: [businessId], references: [id])
+  conversations Conversation[]
+  leads       Lead[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("whatsapp_users")
+}
+
+model Business {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  location    Json?
+  isActive    Boolean   @default(true)
+  settings    Json      @default("{}")
+  users       User[]
+  whatsappUsers WhatsAppUser[]
+  campaigns   Campaign[]
+  leads       Lead[]
+  dataAlexia  DataAlexia[]
+  bots        Bot[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("businesses")
+}
+
+model Campaign {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  status      CampaignStatus @default(DRAFT)
+  startDate   DateTime?
+  endDate     DateTime?
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  leads       Lead[]
+  metrics     CampaignMetric[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("campaigns")
+}
+
+model Lead {
+  id            String      @id @default(cuid())
+  waUserId      String
+  waUser        WhatsAppUser @relation(fields: [waUserId], references: [id])
+  businessId    String
+  business      Business    @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  campaignId    String?
+  campaign      Campaign?   @relation(fields: [campaignId], references: [id])
+  status        LeadStatus  @default(NEW)
+  source        String      @default("whatsapp")
+  value         Float?
+  notes         String?
+  contactData   Json        @default("{}")
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("leads")
+}
+
+model Conversation {
+  id          String        @id @default(cuid())
+  waUserId    String
+  waUser      WhatsAppUser  @relation(fields: [waUserId], references: [id])
+  messages    Message[]
+  status      ConversationStatus @default(ACTIVE)
+  context     Json          @default("{}")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  messageId      String       @unique
+  content        String
+  messageType    MessageType  @default(TEXT)
+  direction      Direction    @default(INBOUND)
+  metadata       Json         @default("{}")
+  timestamp      DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+
+  @@map("messages")
+}
+
+model DataAlexia {
+  id          String    @id @default(cuid())
+  businessId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category    String
+  title       String
+  content     String
+  tags        String[]
+  location    Json?
+  isActive    Boolean   @default(true)
+  priority    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("data_alexia")
+}
+
+model CampaignMetric {
+  id           String    @id @default(cuid())
+  campaignId   String
+  campaign     Campaign  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  metricType   String
+  value        Float
+  date         DateTime  @default(now())
+  metadata     Json      @default("{}")
+  createdAt    DateTime  @default(now())
+
+  @@map("campaign_metrics")
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  MERCHANT
+  ANALYST
+  EDITOR
+}
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum ConversationStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  AUDIO
+  VIDEO
+  DOCUMENT
+  LOCATION
+  CONTACT
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+model Bot {
+  id            String    @id @default(cuid())
+  businessId    String
+  business      Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  platform      BotPlatform
+  botToken      String
+  botUsername   String?
+  status        BotStatus @default(OFFLINE)
+  lastActive    DateTime?
+  config        Json      @default("{}")
+  errorLog      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("bots")
+  @@index([businessId])
+  @@index([platform])
+  @@index([status])
+}
+
+enum BotPlatform {
+  TELEGRAM
+  WHATSAPP
+  DISCORD
+  SLACK
+}
+
+enum BotStatus {
+  ONLINE
+  OFFLINE
+  ERROR
+  STARTING
+  STOPPING
+}
