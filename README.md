@@ -179,7 +179,7 @@ This script will:
 
 ### Repository Information
 
-**📦 GitHub**: [https://github.com/HectorCorbellini/first-Alexia-for-Render](https://github.com/HectorCorbellini/first-Alexia-for-Render)
+**📦 GitHub**: [https://github.com/HectorCorbellini/thirdAlexiaRender](https://github.com/HectorCorbellini/thirdAlexiaRender)
 
 **🔄 Last Updated**: Version 3.0.0 - Enterprise Multi-Bot Orchestration
 
@@ -189,20 +189,22 @@ This script will:
 
 **🚀 Deployment**: Multi-platform abstraction layer supporting Render, Railway, and more
 
-Follow these steps to get the project up and running on your local machine.
+## 💻 Local Development (Without Docker)
+
+If you prefer to run without Docker, you'll need to set up the environment manually.
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/en/) (v18 or higher)
 - [pnpm](https://pnpm.io/) (v8 or higher)
-- [PostgreSQL](https://www.postgresql.org/) (v12 or higher)
+- [PostgreSQL](https://www.postgresql.org/) (v12 or higher) - **Must be installed and running**
 
-### Installation & Setup
+### Setup Steps
 
 1.  **Clone the repository:**
     ```sh
-    git clone <YOUR_GIT_URL>
-    cd alexia-
+    git clone https://github.com/HectorCorbellini/thirdAlexiaRender.git
+    cd thirdAlexiaRender
     ```
 
 2.  **Install dependencies:**
@@ -225,6 +227,7 @@ Follow these steps to get the project up and running on your local machine.
     cd backend
     npx prisma generate
     npx prisma migrate dev
+    npx tsx scripts/create-admin.ts  # Create admin user
     cd ..
     ```
 
@@ -252,6 +255,8 @@ pnpm dev
 cd frontend
 pnpm dev
 ```
+
+> ⚠️ **Note:** Docker setup is recommended as it handles database, migrations, and admin user creation automatically. Manual setup requires more configuration.
 
 ### ⚠️ Important Notes
 
