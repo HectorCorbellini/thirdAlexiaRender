@@ -1,3 +1,116 @@
+## [3.0.1] - 2025-10-06
+
+### 🐛 **Critical Bug Fix - Default Business Creation**
+
+#### **Overview**
+Fixed a critical architectural flaw where the application would fail when no business existed in the database. Implemented automatic default business creation during initialization to prevent application crashes and improve first-time user experience.
+
+#### **🔧 Bug Fix Details**
+
+**Problem Identified:**
+- Multiple API endpoints (`/api/bots`, `/api/campaigns`, `/api/leads`) required a business to exist
+- No business was created during initial Docker setup
+- Bot creation would fail silently with "No business found" error
+- Users had no indication that a business was required
+- Manual database intervention was needed to create bots
+
+**Root Cause:**
+- The `create-admin.ts` script only created an admin user, not a default business
+- The `docker-entrypoint.sh` inline initialization didn't include business creation
+- Frontend error handling wasn't displaying backend error messages properly
+
+**Solution Implemented:**
+1. **Enhanced Docker Entrypoint** (`backend/docker-entrypoint.sh`):
+   - Added `createDefaultBusiness()` function to initialization
+   - Ensures default business exists before creating admin user
+   - Associates admin user with the default business
+   - Fails fast if initialization errors occur
+
+2. **Updated Initialization Script** (`backend/scripts/create-admin.ts`):
+   - Added business creation logic
+   - Improved error handling and logging
+   - Better structured initialization flow
+   - Idempotent operations (safe to run multiple times)
+
+3. **Improved Frontend Error Handling** (`frontend/src/components/messaging/MessagingIntegrations.tsx`):
+   - Added console logging for debugging
+   - Display actual backend error messages in UI
+   - Clear previous errors before new operations
+   - Better user feedback on failures
+
+#### **🎯 Changes Made**
+
+**Backend Changes:**
+```bash
+# New initialization flow
+🚀 Starting ALEXIA Backend...
+✅ PostgreSQL is ready!
+📊 Running database migrations...
+🔧 Initializing default data...
+✅ Default business created successfully!  # ← NEW
+✅ Admin user already exists
+🎉 Initialization complete!
+```
+
+**Database Schema:**
+- Default business automatically created with:
+  - Name: "Default Business"
+  - Description: "Default business for bot management and operations"
+  - Category: "General"
+  - Active status: true
+
+**Frontend Improvements:**
+- Bot token input now trims whitespace automatically
+- Error messages from backend displayed in UI
+- Console logging for debugging bot creation
+- Better validation feedback
+
+#### **✅ Benefits**
+
+- **No More Crashes**: Business always exists, preventing API failures
+- **Automatic Setup**: Fresh deployments work immediately without manual intervention
+- **Better UX**: Users can create bots right after login
+- **Production Ready**: Eliminates need for manual database seeding
+- **Idempotent**: Safe to run initialization multiple times
+- **Clear Errors**: Users see actual error messages when issues occur
+
+#### **🧪 Testing**
+
+**Verified Scenarios:**
+- ✅ Fresh Docker installation creates default business
+- ✅ Existing installations detect and skip business creation
+- ✅ Bot creation works immediately after setup
+- ✅ Admin user properly associated with business
+- ✅ Error messages displayed correctly in UI
+
+**Test Command:**
+```bash
+# Test fresh installation
+docker compose down -v
+./docker-start.sh
+# Business and admin user created automatically
+```
+
+#### **📊 Impact**
+
+| Aspect | Before | After |
+|--------|--------|-------|
+| **First-Time Setup** | ❌ Manual DB intervention needed | ✅ Fully automatic |
+| **Bot Creation** | ❌ Failed silently | ✅ Works immediately |
+| **Error Messages** | ❌ Hidden from user | ✅ Displayed in UI |
+| **User Experience** | ❌ Confusing failures | ✅ Smooth onboarding |
+| **Production Readiness** | ❌ Requires manual setup | ✅ Deploy and go |
+
+### Breaking Changes
+- None - fully backward compatible
+
+### Migration Notes
+- Existing deployments will automatically create default business on next restart
+- No manual intervention required
+- Existing businesses are preserved
+
+---
+
 ## [3.0.0] - 2025-10-04
 
 ### 🚀 **Backend Multi-Bot Orchestration - Production-Ready Multi-Platform Management**

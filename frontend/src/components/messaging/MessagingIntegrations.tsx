@@ -75,6 +75,16 @@ export default function MessagingIntegrations() {
 
   const handleCreateBot = async () => {
     try {
+      setError(null); // Clear previous errors
+      
+      console.log('Creating bot with data:', {
+        platform: 'telegram',
+        botToken: formData.botToken,
+        webhookUrl: formData.webhookUrl,
+        polling: formData.polling,
+        pollingInterval: formData.pollingInterval
+      });
+
       const response = await fetch('http://localhost:3001/api/bots', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,23 +97,26 @@ export default function MessagingIntegrations() {
         }),
       });
 
+      const responseData = await response.json();
+      console.log('Backend response:', responseData);
+
       if (!response.ok) {
-        throw new Error('Failed to create bot');
+        const errorMessage = responseData.error || 'Failed to create bot';
+        throw new Error(errorMessage);
       }
 
-      const newBot = await response.json();
-      
       // Transform status to lowercase
-      newBot.status = newBot.status.toLowerCase();
+      responseData.status = responseData.status.toLowerCase();
       
-      setBots([...bots, newBot]);
+      setBots([...bots, responseData]);
       setIsDialogOpen(false);
       resetForm();
       
       // Reload bots to get fresh data
       await loadBots();
-    } catch (err) {
-      setError('Failed to create Telegram bot');
+    } catch (err: any) {
+      const errorMessage = err.message || 'Failed to create Telegram bot';
+      setError(errorMessage);
       console.error('Error creating bot:', err);
     }
   };
@@ -221,7 +234,7 @@ export default function MessagingIntegrations() {
                 <Input
                   id="botToken"
                   value={formData.botToken}
-                  onChange={(e) => setFormData({ ...formData, botToken: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, botToken: e.target.value.trim() })}
                   placeholder="Enter your Telegram bot token"
                 />
               </div>
@@ -270,7 +283,10 @@ export default function MessagingIntegrations() {
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleCreateBot} disabled={!formData.botToken}>
+                <Button 
+                  onClick={handleCreateBot} 
+                  disabled={!formData.botToken || formData.botToken.length === 0}
+                >
                   Add Bot
                 </Button>
               </div>

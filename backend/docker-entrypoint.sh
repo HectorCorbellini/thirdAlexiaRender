@@ -19,15 +19,41 @@ echo "✅ PostgreSQL is ready!"
 echo "📊 Running database migrations..."
 npx prisma migrate deploy
 
-# Check if admin user exists, if not create it
-echo "👤 Checking for admin user..."
+# Initialize default business and admin user
+echo "🔧 Initializing default data..."
 node -e "
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
-async function ensureAdminUser() {
+async function createDefaultBusiness() {
+  try {
+    const existingBusiness = await prisma.business.findFirst();
+    if (existingBusiness) {
+      console.log('✅ Default business already exists');
+      return existingBusiness;
+    }
+
+    const business = await prisma.business.create({
+      data: {
+        name: 'Default Business',
+        description: 'Default business for bot management and operations',
+        category: 'General',
+        isActive: true,
+        settings: {}
+      }
+    });
+
+    console.log('✅ Default business created successfully!');
+    return business;
+  } catch (error) {
+    console.error('❌ Error creating default business:', error.message);
+    throw error;
+  }
+}
+
+async function ensureAdminUser(businessId) {
   try {
     const existingUser = await prisma.user.findUnique({
       where: { email: 'admin@alexia.com' }
@@ -46,7 +72,8 @@ async function ensureAdminUser() {
         password: hashedPassword,
         name: 'Admin User',
         role: 'SUPERADMIN',
-        isActive: true
+        isActive: true,
+        businessId
       }
     });
 
@@ -55,12 +82,22 @@ async function ensureAdminUser() {
     console.log('   Password: admin123456');
   } catch (error) {
     console.error('❌ Error ensuring admin user:', error.message);
+  }
+}
+
+async function initialize() {
+  try {
+    const business = await createDefaultBusiness();
+    await ensureAdminUser(business.id);
+  } catch (error) {
+    console.error('❌ Initialization failed:', error.message);
+    process.exit(1);
   } finally {
     await prisma.\$disconnect();
   }
 }
 
-ensureAdminUser();
+initialize();
 "
 
 echo "🎉 Initialization complete!"
